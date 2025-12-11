@@ -8,6 +8,8 @@ public class VirtualThreadsTest {
 
 	public static void main(String[] args) {
 
+		System.setProperty("jdk.virtualThreadScheduler.enableDebugging", "true");
+
 		JFrame frame = new JFrame("Circles and Threads");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(1920, 1080);

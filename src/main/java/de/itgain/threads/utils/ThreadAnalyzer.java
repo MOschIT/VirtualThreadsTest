@@ -16,8 +16,14 @@ public class ThreadAnalyzer {
 			System.out.printf("Thread Typ: %s%n",
 							  thread.isVirtual() ? "Virtueller Thread" : "Platform Thread");
 			System.out.printf("Thread Status: %s%n", thread.getState());
-			System.out.println("------------------------");
+			System.out.println("------------------------"+getActiveVirtualThreads());
 		}
+	}
+
+	public static long getActiveVirtualThreads() {
+		return Thread.getAllStackTraces().keySet().stream()
+					 .filter(Thread::isVirtual)
+					 .count();
 	}
 
 }

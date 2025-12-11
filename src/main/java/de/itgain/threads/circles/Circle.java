@@ -157,7 +157,7 @@ public class Circle implements Runnable {
 	private void verbraucheSpeicher(long duration) {
 		long end = System.nanoTime() + duration; // 16ms Speicher verbrauchen
 
-		int size = 1_000_000; // Größe des Arrays (z. B. für ca. 50 MB)
+		int size = 10_000_000; // Größe des Arrays (z. B. für ca. 40 MB)
 		int[] largeArray = new int[size];
 		int i = 1;
 

@@ -6,6 +6,8 @@ import de.itgain.threads.circles.Circle;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -78,11 +80,24 @@ public class CircleThreadPanel extends JPanel {
 
 		add(threadPanel, BorderLayout.EAST);
 
-		// Obere Leiste mit Checkboxen und Buttons
+		// Untere Leiste mit Status Infos
 		JPanel statusPanel = new JPanel();
 		statusPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
 		statusPanel.add(SchedulerConfigReader.createSchedulerConfigLable());
+
+		// UI-Komponenten für die CPU- und Speicherauslastung erstellen
+		JProgressBar cpuProgressBar = new JProgressBar(0, 100); // CPU-Auslastung
+		cpuProgressBar.setStringPainted(true);
+		cpuProgressBar.setString("CPU: 0%");
+
+		JProgressBar memoryProgressBar = new JProgressBar(0, 100); // Speicher-Auslastung
+		memoryProgressBar.setStringPainted(true);
+		memoryProgressBar.setString("Memory: 0%");
+
+		// Füge die ProgressBars zur Statusleiste hinzu
+		statusPanel.add(cpuProgressBar);
+		statusPanel.add(memoryProgressBar);
 
 		add(statusPanel, BorderLayout.SOUTH);
 
@@ -202,6 +217,16 @@ public class CircleThreadPanel extends JPanel {
 		// Aktualisieren der Thread-Liste
 		Timer threadListTimer = new Timer(1000, e -> updateThreadList());
 		threadListTimer.start();
+
+		// Aktualisieren der Auslastung
+		Timer performanceTimer = new Timer(1000, e -> printApplicationPerformance());
+		performanceTimer.start();
+
+		// Timer zur Aktualisierung der ProgressBars
+		Timer progressBarUpdateTimer = new Timer(1000, e -> {
+			updatePerformanceMetrics(cpuProgressBar, memoryProgressBar);
+		});
+		progressBarUpdateTimer.start();
 	}
 
 	private void createCircles(int anzahl, boolean virtualThreads, boolean sleeper, boolean useCpu, boolean useMemory, int dimX, int dimY){
@@ -274,6 +299,44 @@ public class CircleThreadPanel extends JPanel {
 				threadListModel.addElement(thread.getName() + " - " + thread.getState());
 			}
 		}
+	}
+
+	public void printApplicationPerformance() {
+		OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+		// Prüfen, ob die erweiterte API verfügbar ist (für die CPU-Auslastung)
+		if (osBean instanceof com.sun.management.OperatingSystemMXBean extendedOsBean) {
+			double processCpuLoad = extendedOsBean.getProcessCpuLoad() * 100;
+			System.out.printf("CPU-Auslastung: %.2f%%\n", processCpuLoad);
+		} else {
+			System.out.println("CPU-Auslastung konnte nicht ermittelt werden.");
+		}
+
+		// Speicherverbrauch ermitteln
+		Runtime runtime = Runtime.getRuntime();
+		long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+		long maxMemory = runtime.maxMemory();
+
+		System.out.printf("Speicherverbrauch: %d MB von maximal %d MB\n", usedMemory / (1024 * 1024), maxMemory / (1024 * 1024));
+	}
+
+	private void updatePerformanceMetrics(JProgressBar cpuProgressBar, JProgressBar memoryProgressBar) {
+		// CPU-Auslastung abrufen
+		OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+		if (osBean instanceof com.sun.management.OperatingSystemMXBean extendedOsBean) {
+			double processCpuLoad = extendedOsBean.getProcessCpuLoad() * 100; // CPU in Prozent
+			cpuProgressBar.setValue((int) processCpuLoad);
+			cpuProgressBar.setString(String.format("CPU: %.2f%%", processCpuLoad));
+		} else {
+			cpuProgressBar.setString("CPU: N/A");
+		}
+
+		// Speicherauslastung abrufen
+		Runtime runtime = Runtime.getRuntime();
+		long maxMemory = runtime.maxMemory();
+		long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+		int memoryUsage = (int) ((usedMemory * 100) / maxMemory); // Speicher in Prozent
+		memoryProgressBar.setValue(memoryUsage);
+		memoryProgressBar.setString(String.format("Memory: %d%%", memoryUsage));
 	}
 
 	public static void main(String[] args) {
